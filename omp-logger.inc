@@ -21,6 +21,8 @@ enum E_OMP_LOGGER_LEVEL
     #define DEFAULT_OMP_LOG_LEVEL       (Info | Warning | Error)
 #endif
 
+#define INVALID_LOGGER_ID               (Logger:-1)
+
 native Logger:Logger_Create(const name[], color = 0, E_OMP_LOGGER_LEVEL:level = DEFAULT_OMP_LOG_LEVEL);
 native bool:Logger_Destroy(Logger:id);
 native bool:Logger_Log(Logger:id, E_OMP_LOGGER_LEVEL:level, const format[], OPEN_MP_TAGS:...);
