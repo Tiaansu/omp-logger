@@ -1,0 +1,15 @@
+[submodule "deps/open.mp-sdk"]
+	path = deps/open.mp-sdk
+	url = https://github.com/openmultiplayer/open.mp-sdk
+[submodule "deps/pawn-natives"]
+	path = deps/pawn-natives
+	url = https://github.com/openmultiplayer/pawn-natives
+[submodule "deps/pawn"]
+	path = deps/pawn
+	url = https://github.com/openmultiplayer/compiler
+[submodule "deps/fmt"]
+	path = deps/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "deps/samp-cmake"]
+	path = deps/samp-cmake
+	url = git@github.com:AmyrAhmady/samp-cmake-modules.git
