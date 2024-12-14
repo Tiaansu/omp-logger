@@ -3,6 +3,10 @@
 #include <map>
 #include <string>
 
+#include <queue>
+#include <mutex>
+#include <functional>
+
 #include <fmt/color.h>
 #include <sdk.hpp>
 #include <Server/Components/Pawn/pawn.hpp>
@@ -15,7 +19,10 @@
 class OmpLoggerComponent final
     : public IOmpLoggerComponent
     , public PawnEventHandler
+    , public CoreEventHandler
 {
+    typedef std::function<void()> Callback;
+    typedef std::queue<Callback> CallbackQueue;
 private:
     ICore* core_ = nullptr;
 
@@ -24,6 +31,8 @@ private:
     MarkedPoolStorage<OmpLog, IOmpLog, 1, 1000> pool_;
 
     inline static OmpLoggerComponent* instance_ = nullptr;
+
+    FlatHashMap<AMX*, IPawnScript*> amxToPawnScript_;
 
     // configs
     std::map<OmpLogger::ELogLevel, fmt::rgb> logLevelColors_ = {};
@@ -36,6 +45,9 @@ private:
 
 public:
     ~OmpLoggerComponent();
+
+    CallbackQueue m_Queue;
+    std::mutex m_Mutex;
 
     // API
     IOmpLog* createLogger(StringView name, int32_t color, OmpLogger::ELogLevel level, bool isPlugin) override;
@@ -53,6 +65,28 @@ public:
     SemanticVersion componentVersion() const override
     {
         return SemanticVersion(0, 0, 1, 0);
+    }
+
+    void AddCallback(Callback cb)
+    {
+        std::lock_guard<std::mutex> lg(m_Mutex);
+        m_Queue.push(cb);
+    }
+
+    void ExecuteCallbacks()
+    {
+        std::lock_guard<std::mutex> lg(m_Mutex);
+
+        while (!m_Queue.empty())
+        {
+            m_Queue.front()();
+            m_Queue.pop();
+        }
+    }
+
+    void onTick(Microseconds elapsed, TimePoint now)
+    {
+        ExecuteCallbacks();
     }
     
     void onLoad(ICore* c) override;
@@ -85,6 +119,11 @@ public:
     ICore* getCore()
     {
         return core_;
+    }
+
+    FlatHashMap<AMX*, IPawnScript*> getAmxToPawnScriptMap()
+    {
+        return amxToPawnScript_;
     }
 
     // API - Config

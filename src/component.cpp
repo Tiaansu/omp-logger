@@ -26,7 +26,7 @@ IOmpLog* OmpLoggerComponent::createLogger(StringView name, int32_t color, OmpLog
         color = 0;
     }
 
-    std::FILE* file = ::fopen(filepath.c_str(), "a");
+    std::FILE* file = ::fopen(filepath.c_str(), "a+");
     if (file == nullptr)
     {
         core_->logLn(LogLevel::Error, "Failed to open log file \"%s\".", filepath.c_str());
@@ -68,6 +68,7 @@ void OmpLoggerComponent::onInit(IComponentList* components)
     setAmxFunctions(pawn_->getAmxFunctions());
     setAmxLookups(components);
     pawn_->getEventDispatcher().addEventHandler(this);
+    core_->getEventDispatcher().addEventHandler(this);
 
     IConfig& config = core_->getConfig();
     isLogLevelNameCapitalized_ = (config.getBool("logger.log_level_capitalized")) ? (*config.getBool("logger.log_level_capitalized")) : false;
@@ -206,11 +207,14 @@ void OmpLoggerComponent::onAmxLoad(IPawnScript& script)
     AMX* amx = script.GetAMX();
     pawn_natives::AmxLoad(amx);
     debugRegisterAMX(amx);
+    amxToPawnScript_.emplace(amx, &script);
 }
 
 void OmpLoggerComponent::onAmxUnload(IPawnScript& script)
 {
-    debugEraseAMX(script.GetAMX());
+    AMX* amx = script.GetAMX();
+    debugEraseAMX(amx);
+    amxToPawnScript_.erase(amx);
 }
 
 OmpLoggerComponent::~OmpLoggerComponent()
@@ -218,6 +222,10 @@ OmpLoggerComponent::~OmpLoggerComponent()
     if (pawn_)
     {
         pawn_->getEventDispatcher().removeEventHandler(this);
+    }
+    if (core_)
+    {
+        core_->getEventDispatcher().removeEventHandler(this);
     }
 }
 
