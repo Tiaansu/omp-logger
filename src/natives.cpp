@@ -61,16 +61,16 @@ SCRIPT_API(Logger_Fatal, bool(IOmpLog& logger, cell const* format))
     return logger.log(amx, OmpLogger::ELogLevel::Fatal, AmxStringFormatter(format, amx, GetParams(), 2));
 }
 
-SCRIPT_API(Logger_FetchLogs, bool(IPlayer& player, IOmpLog& logger, int linesPerPage, int pageStart, std::string const& callback, std::string const& searchTerm))
+SCRIPT_API(Logger_FetchLogs, bool(IPlayer& player, IOmpLog& logger, int linesPerPage, int pageStart, std::string const& callback, std::string const& searchTerm, bool caseSensitive))
 {
     AMX* amx = GetAMX();
 
-    auto func = [&player, &logger, amx, callback, searchTerm, linesPerPage, pageStart]() {
+    auto func = [&player, &logger, amx, callback, searchTerm, linesPerPage, pageStart, caseSensitive]() {
 
         int funcIDX = 0;
         if (!amx_FindPublic(amx, callback.c_str(), &funcIDX))
         {
-            PaginatedResult result = logger.fetchLogs(linesPerPage, pageStart, searchTerm);
+            PaginatedResult result = logger.fetchLogs(linesPerPage, pageStart, searchTerm, caseSensitive);
             ILogsResult* logsResult = OmpLoggerComponent::Get()->initLogsResult(result.lines);
             amx_Push(amx, result.totalPages);
             amx_Push(amx, result.currentPage);

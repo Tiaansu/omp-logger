@@ -34,6 +34,15 @@ std::FILE* OmpLog::getFile() const
     return file_;
 }
 
+bool caseInsensitiveCompare(const std::string& str1, const std::string& str2)
+{
+    std::string lowerStr1 = str1;
+    std::string lowerStr2 = str2;
+    std::transform(lowerStr1.begin(), lowerStr1.end(), lowerStr1.begin(), ::tolower);
+    std::transform(lowerStr2.begin(), lowerStr2.end(), lowerStr2.begin(), ::tolower);
+    return lowerStr1.find(lowerStr2) != std::string::npos;
+}
+
 long long countTotalLines(std::FILE* file)
 {
     if (file == nullptr)
@@ -55,7 +64,7 @@ long long countTotalLines(std::FILE* file)
     return lineCount;
 }
 
-long long countMatchingLines(std::FILE* file, const std::string& searchTerm)
+long long countMatchingLines(std::FILE* file, const std::string& searchTerm, bool caseSensitive)
 {
     if (file == nullptr)
     {
@@ -69,9 +78,19 @@ long long countMatchingLines(std::FILE* file, const std::string& searchTerm)
     while (std::fgets(buffer, sizeof(buffer), file) != nullptr)
     {
         std::string line(buffer);
-        if (line.find(searchTerm) != std::string::npos)
+        if (caseSensitive)
         {
-            lineCount ++;
+            if (line.find(searchTerm) != std::string::npos)
+            {
+                lineCount ++;
+            }
+        }
+        else
+        {
+            if (caseInsensitiveCompare(line, searchTerm))
+            {
+                lineCount ++;
+            }
         }
     }
 
@@ -79,7 +98,7 @@ long long countMatchingLines(std::FILE* file, const std::string& searchTerm)
     return lineCount;
 }
 
-PaginatedResult OmpLog::fetchLogs(int linesPerPage, int pageStart, const std::string& searchTerm) const
+PaginatedResult OmpLog::fetchLogs(int linesPerPage, int pageStart, const std::string& searchTerm, bool caseSensitive) const
 {
     PaginatedResult result;
 
@@ -90,7 +109,7 @@ PaginatedResult OmpLog::fetchLogs(int linesPerPage, int pageStart, const std::st
 
     if (!searchTerm.empty())
     {
-        result.totalPages = (countMatchingLines(file_, searchTerm) + linesPerPage - 1) / linesPerPage;
+        result.totalPages = (countMatchingLines(file_, searchTerm, caseSensitive) + linesPerPage - 1) / linesPerPage;
     }
     else
     {
@@ -114,9 +133,20 @@ PaginatedResult OmpLog::fetchLogs(int linesPerPage, int pageStart, const std::st
         while (currentLine < startLine && ::fgets(buffer, sizeof(buffer), file_) != nullptr)
         {
             std::string line(buffer);
-            if (line.find(searchTerm) != std::string::npos)
+
+            if (caseSensitive)
             {
-                currentLine ++;
+                if (line.find(searchTerm) != std::string::npos)
+                {
+                    currentLine ++;
+                }
+            }
+            else
+            {
+                if (caseInsensitiveCompare(line, searchTerm))
+                {
+                    currentLine ++;
+                }
             }
         }
     }
@@ -140,7 +170,8 @@ PaginatedResult OmpLog::fetchLogs(int linesPerPage, int pageStart, const std::st
             return !std::isspace(ch);
         }).base(), line.end());
 
-        if (searchTerm.empty() || line.find(searchTerm) != std::string::npos)
+        bool caseSensitiveResult = caseSensitive ? line.find(searchTerm) != std::string::npos : caseInsensitiveCompare(line, searchTerm);
+        if (searchTerm.empty() || caseSensitiveResult)
         {
             result.lines.push_back(line);
             linesRead ++;

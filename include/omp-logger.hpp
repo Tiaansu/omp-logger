@@ -69,7 +69,7 @@ struct IOmpLog
 
     virtual uint32_t getColor() const = 0;
 
-    virtual PaginatedResult fetchLogs(int linesPerPage, int pageStart, const std::string& searchTerm) const = 0;
+    virtual PaginatedResult fetchLogs(int linesPerPage, int pageStart, const std::string& searchTerm, bool caseSensitive) const = 0;
 
     virtual bool log(AMX* amx, OmpLogger::ELogLevel level, StringView message) const = 0;
     
