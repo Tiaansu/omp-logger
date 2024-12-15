@@ -51,3 +51,4 @@ You can check this [repository](https://github.com/Tiaansu/greet-component) for 
 ## Thanks to
 - [Amir's omp-node](https://github.com/AmyrAhmady/omp-node) (I copied it's `include` style so other components can use this component)
 - [maddinatOr's samp-log-core](https://github.com/maddinat0r/samp-log-core) (most of the code were from this project)
+- [Toiletduck / Eksqtr](https://github.com/eksqtr) (big thanks to this person. Many ideas were from him)

@@ -38,6 +38,8 @@ public:
 
     bool log(OmpLogger::ELogLevel level, StringView message) const override;
 
+    PaginatedResult fetchLogs(int linesPerPage, int pageStart, const std::string& searchTerm) const override;
+
     OmpLog(StringView name, uint32_t color, OmpLogger::ELogLevel level, std::FILE* file);    
 
 private:

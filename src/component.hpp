@@ -3,10 +3,6 @@
 #include <map>
 #include <string>
 
-#include <queue>
-#include <mutex>
-#include <functional>
-
 #include <fmt/color.h>
 #include <sdk.hpp>
 #include <Server/Components/Pawn/pawn.hpp>
@@ -15,14 +11,13 @@
 #include "omp-logger.hpp"
 #include "omp-log.hpp"
 #include "debug-manager.hpp"
+#include "logs-result.hpp"
 
 class OmpLoggerComponent final
     : public IOmpLoggerComponent
     , public PawnEventHandler
     , public CoreEventHandler
 {
-    typedef std::function<void()> Callback;
-    typedef std::queue<Callback> CallbackQueue;
 private:
     ICore* core_ = nullptr;
 
@@ -30,9 +25,9 @@ private:
 
     MarkedPoolStorage<OmpLog, IOmpLog, 1, 1000> pool_;
 
-    inline static OmpLoggerComponent* instance_ = nullptr;
+    MarkedPoolStorage<LogsResult, ILogsResult, 1, 5000> logsResults_;
 
-    FlatHashMap<AMX*, IPawnScript*> amxToPawnScript_;
+    inline static OmpLoggerComponent* instance_ = nullptr;
 
     // configs
     std::map<OmpLogger::ELogLevel, fmt::rgb> logLevelColors_ = {};
@@ -46,15 +41,19 @@ private:
 public:
     ~OmpLoggerComponent();
 
-    CallbackQueue m_Queue;
-    std::mutex m_Mutex;
-
     // API
     IOmpLog* createLogger(StringView name, int32_t color, OmpLogger::ELogLevel level, bool isPlugin) override;
 
     bool destroyLogger(IOmpLog* logger) override;
 
     IOmpLog* getLogger(int id) override;
+
+    // Fetch logs
+    ILogsResult* initLogsResult(std::vector<std::string> logs);
+
+    bool deleteLogsResult(ILogsResult* result);
+
+    ILogsResult* getLogsResult(int id);
 
     // Component
     StringView componentName() const override
@@ -67,27 +66,7 @@ public:
         return SemanticVersion(0, 0, 1, 0);
     }
 
-    void AddCallback(Callback cb)
-    {
-        std::lock_guard<std::mutex> lg(m_Mutex);
-        m_Queue.push(cb);
-    }
-
-    void ExecuteCallbacks()
-    {
-        std::lock_guard<std::mutex> lg(m_Mutex);
-
-        while (!m_Queue.empty())
-        {
-            m_Queue.front()();
-            m_Queue.pop();
-        }
-    }
-
-    void onTick(Microseconds elapsed, TimePoint now)
-    {
-        ExecuteCallbacks();
-    }
+    void onTick(Microseconds elapsed, TimePoint now) override;
     
     void onLoad(ICore* c) override;
 
@@ -119,11 +98,6 @@ public:
     ICore* getCore()
     {
         return core_;
-    }
-
-    FlatHashMap<AMX*, IPawnScript*> getAmxToPawnScriptMap()
-    {
-        return amxToPawnScript_;
     }
 
     // API - Config

@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
-#include <json.hpp>
+#include <thread>
 
 #include <sdk.hpp>
 #include <Server/Components/Pawn/Impl/pawn_natives.hpp>
@@ -9,6 +9,7 @@
 #include "component.hpp"
 #include "natives.hpp"
 #include "omp-logger.hpp"
+#include "threaded-queue.hpp"
 #include "helpers/format.hpp"
 
 SCRIPT_API(Logger_Create, int(std::string const& name, int32_t color, OmpLogger::ELogLevel level))
@@ -60,85 +61,37 @@ SCRIPT_API(Logger_Fatal, bool(IOmpLog& logger, cell const* format))
     return logger.log(amx, OmpLogger::ELogLevel::Fatal, AmxStringFormatter(format, amx, GetParams(), 2));
 }
 
-using json = nlohmann::json;
-
-json readFileWithPagination(std::FILE* file, int pageSize, int pageNumber, int offset)
+SCRIPT_API(Logger_FetchLogs, bool(IPlayer& player, IOmpLog& logger, int linesPerPage, int pageStart, std::string const& callback, std::string const& searchTerm))
 {
-    json result = json::array();
+    AMX* amx = GetAMX();
 
-    if (file == nullptr)
-    {
-        return result;
-    }
+    auto func = [&player, &logger, amx, callback, searchTerm, linesPerPage, pageStart]() {
 
-    long startPosition = offset + (pageNumber - 1) * pageSize;
-
-    if (::fseek(file, startPosition, SEEK_SET) != 0)
-    {
-        return result;
-    }
-
-    std::string line;
-    char buffer[4096];
-
-    for (int i = 0; i < pageSize; i ++)
-    {
-        if (::fgets(buffer, sizeof(buffer), file) != nullptr)
+        int funcIDX = 0;
+        if (!amx_FindPublic(amx, callback.c_str(), &funcIDX))
         {
-            line = buffer;
-
-            line.erase(std::find_if(line.rbegin(), line.rend(), [](unsigned char ch) 
-            {
-                return !std::isspace(ch);
-            }).base(), line.end());
-            result.push_back(line);
+            PaginatedResult result = logger.fetchLogs(linesPerPage, pageStart, searchTerm);
+            ILogsResult* logsResult = OmpLoggerComponent::Get()->initLogsResult(result.lines);
+            amx_Push(amx, result.totalPages);
+            amx_Push(amx, result.currentPage);
+            amx_Push(amx, (int)result.lines.size());
+            amx_Push(amx, logsResult->getID());
+            amx_Push(amx, logger.getID());
+            amx_Push(amx, player.getID());
+            amx_Exec(amx, NULL, funcIDX);
         }
-        else
-        {
-            break;
-        }
-    }
-
-    return result;
+    };
+    ThreadedQueue::Get()->Dispatch(func);
+    return 1;
 }
 
-SCRIPT_API(Logget_FetchLogs, bool(IOmpLog& logger, int amount, int pageStart, int offset, std::string const& callback))
+SCRIPT_API(Logger_GetResult, int(ILogsResult& result, int row, OutputOnlyString& logs))
 {
-    // AMX* amx = GetAMX();
-    // int funcIDX = 0;
+    logs = result.getLog(row);
+    return std::get<StringView>(logs).length();
+}
 
-    // if (!amx_FindPublic(amx, callback.c_str(), &funcIDX))
-    // {
-    //     cell addr = 0;
-
-    //     json pageData = readFileWithPagination(logger.getFile(), amount, pageStart, offset);
-    //     amx_PushString(amx, &addr, NULL, pageData.dump(4).c_str(), NULL, NULL);
-    //     amx_Exec(amx, NULL, funcIDX);
-    //     amx_Release(amx, addr);
-    // }
-
-    std::FILE* file = logger.getFile();
-    AMX* amx = GetAMX();
-    std::string func = callback;
-
-    OmpLoggerComponent::Get()->AddCallback([file, amx, func, amount, pageStart, offset]() {
-        int funcIDX = 0;
-
-        int ret = amx_FindPublic(amx, func.c_str(), &funcIDX);
-
-        if (!ret)
-        {
-            cell addr = 0;
-
-            json pageData = readFileWithPagination(file, amount, pageStart, offset);
-            amx_PushString(amx, &addr, NULL, pageData.dump(4).c_str(), NULL, NULL);
-            amx_Exec(amx, NULL, funcIDX);
-            amx_Release(amx, addr);
-        }
-        else
-        {
-            OmpLoggerComponent::Get()->getCore()->printLn("FAILED: %s", func.c_str());
-        }
-    });
-    return 1;
+SCRIPT_API(Logger_FreeResult, bool(ILogsResult& result))
+{
+    return OmpLoggerComponent::Get()->deleteLogsResult(&result);
 }

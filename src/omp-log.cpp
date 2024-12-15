@@ -34,6 +34,121 @@ std::FILE* OmpLog::getFile() const
     return file_;
 }
 
+long long countTotalLines(std::FILE* file)
+{
+    if (file == nullptr)
+    {
+        return 0;
+    }
+
+    ::fseek(file, 0, SEEK_SET);
+
+    long long lineCount = 0;
+    char buffer[4096];
+
+    while (::fgets(buffer, sizeof(buffer), file) != nullptr)
+    {
+        lineCount ++;
+    }
+
+    ::fseek(file, 0, SEEK_SET);
+    return lineCount;
+}
+
+long long countMatchingLines(std::FILE* file, const std::string& searchTerm)
+{
+    if (file == nullptr)
+    {
+        return 0;
+    }
+
+    ::fseek(file, 0, SEEK_SET);
+
+    long long lineCount = 0;
+    char buffer[4096];
+    while (std::fgets(buffer, sizeof(buffer), file) != nullptr)
+    {
+        std::string line(buffer);
+        if (line.find(searchTerm) != std::string::npos)
+        {
+            lineCount ++;
+        }
+    }
+
+    std::fseek(file, 0, SEEK_SET);
+    return lineCount;
+}
+
+PaginatedResult OmpLog::fetchLogs(int linesPerPage, int pageStart, const std::string& searchTerm) const
+{
+    PaginatedResult result;
+
+    if (file_ == nullptr)
+    {
+        return result;
+    }
+
+    if (!searchTerm.empty())
+    {
+        result.totalPages = (countMatchingLines(file_, searchTerm) + linesPerPage - 1) / linesPerPage;
+    }
+    else
+    {
+        result.totalPages = (countTotalLines(file_) + linesPerPage - 1) / linesPerPage;
+    }
+
+    if (pageStart == -1 || pageStart > result.totalPages)
+    {
+        pageStart = 1;
+    }
+
+    result.currentPage = pageStart;
+
+    long long startLine = (pageStart - 1) * linesPerPage;
+
+    if (!searchTerm.empty())
+    {
+        ::fseek(file_, 0, SEEK_SET);
+        long long currentLine = 0;
+        char buffer[4096];
+        while (currentLine < startLine && ::fgets(buffer, sizeof(buffer), file_) != nullptr)
+        {
+            std::string line(buffer);
+            if (line.find(searchTerm) != std::string::npos)
+            {
+                currentLine ++;
+            }
+        }
+    }
+    else
+    {
+        ::fseek(file_, 0, SEEK_SET);
+        long long currentLine = 0;
+        char buffer[4096];
+        while (currentLine < startLine && ::fgets(buffer, sizeof(buffer), file_) != nullptr)
+        {
+            currentLine ++;
+        }
+    }
+
+    char buffer[4096];
+    long long linesRead = 0;
+    while (linesRead < linesPerPage && ::fgets(buffer, sizeof(buffer), file_) != nullptr)
+    {
+        std::string line(buffer);
+        line.erase(std::find_if(line.rbegin(), line.rend(), [](unsigned char ch) {
+            return !std::isspace(ch);
+        }).base(), line.end());
+
+        if (searchTerm.empty() || line.find(searchTerm) != std::string::npos)
+        {
+            result.lines.push_back(line);
+            linesRead ++;
+        }
+    }
+    return result;
+}
+
 bool OmpLog::log(AMX* amx, OmpLogger::ELogLevel level, StringView message) const
 {
     return log_INTERNAL(amx, level, message);

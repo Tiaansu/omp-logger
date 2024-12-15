@@ -3,6 +3,7 @@
 #include <fmt/format.h>
 #include "component.hpp"
 #include "helpers/utils.hpp"
+#include "threaded-queue.hpp"
 
 // API
 IOmpLog* OmpLoggerComponent::createLogger(StringView name, int32_t color, OmpLogger::ELogLevel level, bool isPlugin)
@@ -46,6 +47,24 @@ bool OmpLoggerComponent::destroyLogger(IOmpLog* logger)
 IOmpLog* OmpLoggerComponent::getLogger(int id)
 {
     return pool_.get(id);
+}
+
+// Fetch logs
+ILogsResult* OmpLoggerComponent::initLogsResult(std::vector<std::string> logs)
+{
+    return logsResults_.emplace(logs);
+}
+
+bool OmpLoggerComponent::deleteLogsResult(ILogsResult* result)
+{
+    int id = static_cast<ILogsResult*>(result)->getID();
+    logsResults_.release(id, false);
+    return true;
+}
+
+ILogsResult* OmpLoggerComponent::getLogsResult(int id)
+{
+    return logsResults_.get(id);
 }
 
 // Callbacks
@@ -194,6 +213,8 @@ void OmpLoggerComponent::free()
         serverLoggerFile_ = nullptr;
     }
 
+    ThreadedQueue::Get()->Destroy();
+
     delete this;
     core_->printLn("[omp-logger] Logger released.");
 }
@@ -207,14 +228,17 @@ void OmpLoggerComponent::onAmxLoad(IPawnScript& script)
     AMX* amx = script.GetAMX();
     pawn_natives::AmxLoad(amx);
     debugRegisterAMX(amx);
-    amxToPawnScript_.emplace(amx, &script);
 }
 
 void OmpLoggerComponent::onAmxUnload(IPawnScript& script)
 {
     AMX* amx = script.GetAMX();
     debugEraseAMX(amx);
-    amxToPawnScript_.erase(amx);
+}
+
+void OmpLoggerComponent::onTick(Microseconds elapsed, TimePoint now)
+{
+    ThreadedQueue::Get()->Process();
 }
 
 OmpLoggerComponent::~OmpLoggerComponent()

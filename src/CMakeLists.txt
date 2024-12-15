@@ -11,7 +11,6 @@ add_library(${PROJECT_NAME} SHARED ${OMPLOGGER_FILES})
 
 include_directories(
     ../deps
-    ../deps/json
     ../deps/pawn/source
     ../deps/pawn/source/linux
 )
