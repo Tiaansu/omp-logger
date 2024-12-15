@@ -3,6 +3,7 @@
 #include <fmt/format.h>
 #include "component.hpp"
 #include "helpers/utils.hpp"
+#include "threaded-queue.hpp"
 
 // API
 IOmpLog* OmpLoggerComponent::createLogger(StringView name, int32_t color, OmpLogger::ELogLevel level, bool isPlugin)
@@ -26,7 +27,7 @@ IOmpLog* OmpLoggerComponent::createLogger(StringView name, int32_t color, OmpLog
         color = 0;
     }
 
-    std::FILE* file = ::fopen(filepath.c_str(), "a");
+    std::FILE* file = ::fopen(filepath.c_str(), "a+");
     if (file == nullptr)
     {
         core_->logLn(LogLevel::Error, "Failed to open log file \"%s\".", filepath.c_str());
@@ -46,6 +47,24 @@ bool OmpLoggerComponent::destroyLogger(IOmpLog* logger)
 IOmpLog* OmpLoggerComponent::getLogger(int id)
 {
     return pool_.get(id);
+}
+
+// Fetch logs
+ILogsResult* OmpLoggerComponent::initLogsResult(std::vector<std::string> logs)
+{
+    return logsResults_.emplace(logs);
+}
+
+bool OmpLoggerComponent::deleteLogsResult(ILogsResult* result)
+{
+    int id = static_cast<ILogsResult*>(result)->getID();
+    logsResults_.release(id, false);
+    return true;
+}
+
+ILogsResult* OmpLoggerComponent::getLogsResult(int id)
+{
+    return logsResults_.get(id);
 }
 
 // Callbacks
@@ -68,6 +87,7 @@ void OmpLoggerComponent::onInit(IComponentList* components)
     setAmxFunctions(pawn_->getAmxFunctions());
     setAmxLookups(components);
     pawn_->getEventDispatcher().addEventHandler(this);
+    core_->getEventDispatcher().addEventHandler(this);
 
     IConfig& config = core_->getConfig();
     isLogLevelNameCapitalized_ = (config.getBool("logger.log_level_capitalized")) ? (*config.getBool("logger.log_level_capitalized")) : false;
@@ -193,6 +213,8 @@ void OmpLoggerComponent::free()
         serverLoggerFile_ = nullptr;
     }
 
+    ThreadedQueue::Get()->Destroy();
+
     delete this;
     core_->printLn("[omp-logger] Logger released.");
 }
@@ -210,7 +232,13 @@ void OmpLoggerComponent::onAmxLoad(IPawnScript& script)
 
 void OmpLoggerComponent::onAmxUnload(IPawnScript& script)
 {
-    debugEraseAMX(script.GetAMX());
+    AMX* amx = script.GetAMX();
+    debugEraseAMX(amx);
+}
+
+void OmpLoggerComponent::onTick(Microseconds elapsed, TimePoint now)
+{
+    ThreadedQueue::Get()->Process();
 }
 
 OmpLoggerComponent::~OmpLoggerComponent()
@@ -218,6 +246,10 @@ OmpLoggerComponent::~OmpLoggerComponent()
     if (pawn_)
     {
         pawn_->getEventDispatcher().removeEventHandler(this);
+    }
+    if (core_)
+    {
+        core_->getEventDispatcher().removeEventHandler(this);
     }
 }
 

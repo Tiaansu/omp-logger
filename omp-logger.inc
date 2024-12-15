@@ -31,3 +31,17 @@ native bool:Logger_Info(Logger:id, const format[], OPEN_MP_TAGS:...);
 native bool:Logger_Warning(Logger:id, const format[], OPEN_MP_TAGS:...);
 native bool:Logger_Error(Logger:id, const format[], OPEN_MP_TAGS:...);
 native bool:Logger_Fatal(Logger:id, const format[], OPEN_MP_TAGS:...);
+
+// Logs result
+native Logger_FetchLogs(playerid, Logger:logger, amount, pageStart, const callback[], const search[] = "", bool:caseSensitive = true);
+native Logger_GetResult(LogsResult:result, row, logs[], size = sizeof logs);
+native Logger_FreeResult(LogsResult:result);
+
+// Cleanup results once they go out of scope
+stock operator~(const LogsResult:result[], len)
+{
+    for (new i = 0; i < len; ++ i)
+    {
+        Logger_FreeResult(result[i]);
+    }
+}

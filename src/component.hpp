@@ -11,10 +11,12 @@
 #include "omp-logger.hpp"
 #include "omp-log.hpp"
 #include "debug-manager.hpp"
+#include "logs-result.hpp"
 
 class OmpLoggerComponent final
     : public IOmpLoggerComponent
     , public PawnEventHandler
+    , public CoreEventHandler
 {
 private:
     ICore* core_ = nullptr;
@@ -22,6 +24,8 @@ private:
     IPawnComponent* pawn_ = nullptr;
 
     MarkedPoolStorage<OmpLog, IOmpLog, 1, 1000> pool_;
+
+    MarkedPoolStorage<LogsResult, ILogsResult, 1, 5000> logsResults_;
 
     inline static OmpLoggerComponent* instance_ = nullptr;
 
@@ -44,6 +48,13 @@ public:
 
     IOmpLog* getLogger(int id) override;
 
+    // Fetch logs
+    ILogsResult* initLogsResult(std::vector<std::string> logs);
+
+    bool deleteLogsResult(ILogsResult* result);
+
+    ILogsResult* getLogsResult(int id);
+
     // Component
     StringView componentName() const override
     {
@@ -54,6 +65,8 @@ public:
     {
         return SemanticVersion(0, 0, 1, 0);
     }
+
+    void onTick(Microseconds elapsed, TimePoint now) override;
     
     void onLoad(ICore* c) override;
 

@@ -35,6 +35,7 @@ namespace OmpLogger
 }
 
 struct IOmpLog;
+struct PaginatedResult;
 
 static const UID OmpLoggerComponent_UID = UID(0xAB3BC9C4E583C8B4);
 class IOmpLoggerComponent : public IComponent
@@ -67,6 +68,8 @@ struct IOmpLog
     virtual std::FILE* getFile() const = 0;
 
     virtual uint32_t getColor() const = 0;
+
+    virtual PaginatedResult fetchLogs(int linesPerPage, int pageStart, const std::string& searchTerm, bool caseSensitive) const = 0;
 
     virtual bool log(AMX* amx, OmpLogger::ELogLevel level, StringView message) const = 0;
     
@@ -103,4 +106,11 @@ public:
 
 private:
     IOmpLoggerComponent* ompLogger_ = nullptr;
+};
+
+struct PaginatedResult
+{
+    std::vector<std::string> lines;
+    int currentPage;
+    int totalPages;
 };
