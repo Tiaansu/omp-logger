@@ -207,7 +207,14 @@ bool OmpLog::log_INTERNAL(AMX* amx, OmpLogger::ELogLevel level, StringView messa
     {
         std::strftime(timeStr, sizeof timeStr, timestampFormat.c_str(), std::localtime(&now));
         fmt::print("[");
-        fmt::print(fmt::fg(fmt::color::gray), timeStr);
+        if (ompLogger->IsTimestampColorized())
+        {
+            fmt::print(fmt::fg(fmt::color::gray), timeStr);
+        }
+        else
+        {
+            fmt::print(timeStr);
+        }
         fmt::print("] ");
     }
 

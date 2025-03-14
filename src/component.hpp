@@ -2,6 +2,7 @@
 
 #include <map>
 #include <string>
+#include <any>
 
 #include <fmt/color.h>
 #include <sdk.hpp>
@@ -12,6 +13,7 @@
 #include "omp-log.hpp"
 #include "debug-manager.hpp"
 #include "logs-result.hpp"
+#include "common.hpp"
 
 class OmpLoggerComponent final
     : public IOmpLoggerComponent
@@ -19,6 +21,21 @@ class OmpLoggerComponent final
     , public CoreEventHandler
 {
 private:
+    std::map<std::string, std::any> config_ = 
+    {
+        {LOGGER_CONFIG_KEY_ENABLE_SOURCE_FOR_ALL_LEVEL, false},
+        {LOGGER_CONFIG_KEY_DISPLAY_SOURCE, true},
+        {LOGGER_CONFIG_KEY_LOG_DIRECTORY, "logs"},
+        {LOGGER_CONFIG_KEY_IS_LOG_LEVEL_UPPERCASE, false},
+        {LOGGER_CONFIG_KEY_COLOR_DEBUG, "0xADD8E6"},
+        {LOGGER_CONFIG_KEY_COLOR_INFO, "0x90EE90"},
+        {LOGGER_CONFIG_KEY_COLOR_WARNING, "0xFFD700"},
+        {LOGGER_CONFIG_KEY_COLOR_ERROR, "0xFFB266"},
+        {LOGGER_CONFIG_KEY_COLOR_FATAL, "0xFF7F7F"},
+        {LOGGER_CONFIG_KEY_TIMESTAMP_FORMAT, "%Y-%m-%dT%H:%M:%S%z"},
+        {LOGGER_CONFIG_KEY_COLORIZED_TIMESTAMP, false}
+    };
+
     ICore* core_ = nullptr;
 
     IPawnComponent* pawn_ = nullptr;
@@ -34,6 +51,7 @@ private:
     bool isLogLevelNameCapitalized_ = false;
     bool isLoggingWithSource_ = true;
     bool isEnableSourceForAll_ = false;
+    bool isTimestampColorized_ = false;
     String logTimestampFormat_;
     String logDirectoryPath_;
     std::FILE* serverLoggerFile_ = nullptr;
@@ -108,6 +126,8 @@ public:
     bool IsLoggingWithSource();
 
     bool IsEnableSourceForAll();
+
+    bool IsTimestampColorized();
 
     String getLogTimestampFormat();
 

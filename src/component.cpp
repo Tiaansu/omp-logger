@@ -90,19 +90,21 @@ void OmpLoggerComponent::onInit(IComponentList* components)
     core_->getEventDispatcher().addEventHandler(this);
 
     IConfig& config = core_->getConfig();
-    isLogLevelNameCapitalized_ = (config.getBool("logger.log_level_capitalized")) ? (*config.getBool("logger.log_level_capitalized")) : false;
-    isLoggingWithSource_ = (config.getBool("logger.display_source")) ? (*config.getBool("logger.display_source")) : true;
-    isEnableSourceForAll_ = (config.getBool("logger.enable_source_for_all")) ? (*config.getBool("logger.enable_source_for_all")) : false;
-    logTimestampFormat_ = String(config.getString("logger.timestamp_format"));
-    logDirectoryPath_ = String(config.getString("logger.log_directory"));
+    isLogLevelNameCapitalized_ = (config.getBool(LOGGER_CONFIG_KEY_IS_LOG_LEVEL_UPPERCASE)) ? (*config.getBool(LOGGER_CONFIG_KEY_IS_LOG_LEVEL_UPPERCASE)) : false;
+    isLoggingWithSource_ = (config.getBool(LOGGER_CONFIG_KEY_DISPLAY_SOURCE)) ? (*config.getBool(LOGGER_CONFIG_KEY_DISPLAY_SOURCE)) : true;
+    isEnableSourceForAll_ = (config.getBool(LOGGER_CONFIG_KEY_ENABLE_SOURCE_FOR_ALL_LEVEL)) ? (*config.getBool(LOGGER_CONFIG_KEY_ENABLE_SOURCE_FOR_ALL_LEVEL)) : false;
+    isTimestampColorized_ = (config.getBool(LOGGER_CONFIG_KEY_COLORIZED_TIMESTAMP)) ? (*config.getBool(LOGGER_CONFIG_KEY_COLORIZED_TIMESTAMP)) : false;
+    logTimestampFormat_ = String(config.getString(LOGGER_CONFIG_KEY_TIMESTAMP_FORMAT));
+    logDirectoryPath_ = String(config.getString(LOGGER_CONFIG_KEY_LOG_DIRECTORY));
+    core_->printLn("hello! %s=%s", LOGGER_CONFIG_KEY_LOG_DIRECTORY, logDirectoryPath_.c_str());
 
     serverLoggerFile_ = ::fopen(String(config.getString("logging.file")).c_str(), "a");
 
-    logLevelColors_[OmpLogger::ELogLevel::Debug] = helpers::GetLogLevelColorFromConfig("logger.colors.debug");
-    logLevelColors_[OmpLogger::ELogLevel::Info] = helpers::GetLogLevelColorFromConfig("logger.colors.info");
-    logLevelColors_[OmpLogger::ELogLevel::Warning] = helpers::GetLogLevelColorFromConfig("logger.colors.warning");
-    logLevelColors_[OmpLogger::ELogLevel::Error] = helpers::GetLogLevelColorFromConfig("logger.colors.error");
-    logLevelColors_[OmpLogger::ELogLevel::Fatal] = helpers::GetLogLevelColorFromConfig("logger.colors.fatal");
+    logLevelColors_[OmpLogger::ELogLevel::Debug] = helpers::GetLogLevelColorFromConfig(LOGGER_CONFIG_KEY_COLOR_DEBUG);
+    logLevelColors_[OmpLogger::ELogLevel::Info] = helpers::GetLogLevelColorFromConfig(LOGGER_CONFIG_KEY_COLOR_INFO);
+    logLevelColors_[OmpLogger::ELogLevel::Warning] = helpers::GetLogLevelColorFromConfig(LOGGER_CONFIG_KEY_COLOR_WARNING);
+    logLevelColors_[OmpLogger::ELogLevel::Error] = helpers::GetLogLevelColorFromConfig(LOGGER_CONFIG_KEY_COLOR_ERROR);
+    logLevelColors_[OmpLogger::ELogLevel::Fatal] = helpers::GetLogLevelColorFromConfig(LOGGER_CONFIG_KEY_COLOR_FATAL);
 
     DynamicArray<StringView> mainScripts(config.getStringsCount("pawn.main_scripts"));
     config.getStrings("pawn.main_scripts", Span<StringView>(mainScripts.data(), mainScripts.size()));
@@ -139,58 +141,33 @@ void OmpLoggerComponent::provideConfiguration(ILogger& logger, IEarlyConfig& con
 {
     if (defaults)
     {
-        config.setBool("logger.log_level_capitalized", false);
-        config.setBool("logger.enable_source_for_all", false);
-        config.setBool("logger.display_source", true);
-        config.setString("logger.colors.debug", "0xADD8E6");
-        config.setString("logger.colors.info", "0x90EE90");
-        config.setString("logger.colors.warning", "0xFFD700");
-        config.setString("logger.colors.error", "0xFFB266");
-        config.setString("logger.colors.fatal", "0xFF7F7F");
-        config.setString("logger.timestamp_format", "%Y-%m-%dT%H:%M:%S%z");
-        config.setString("logger.log_directory", "logs");
+        for (const auto& [key, value] : config_)
+        {
+            if (value.type() == typeid(char const*))
+            {
+                config.setString(key, std::any_cast<const char*>(value));
+            }
+            else if (value.type() == typeid(bool))
+            {
+                config.setBool(key, std::any_cast<bool>(value));
+            }
+        }
     }
     else
     {
-        if (config.getType("logger.display_source") == ConfigOptionType_None)
+        for (const auto& [key, value] : config_)
         {
-            config.setBool("logger.display_source", true);
-        }
-        if (config.getType("logger.log_level_capitalized") == ConfigOptionType_None)
-        {
-            config.setBool("logger.log_level_capitalized", false);
-        }
-        if (config.getType("logger.enable_source_for_all") == ConfigOptionType_None)
-        {
-            config.setBool("logger.enable_source_for_all", false);
-        }
-        if (config.getType("logger.colors.debug") == ConfigOptionType_None)
-        {
-            config.setString("logger.colors.debug", "0xADD8E6");
-        }
-        if (config.getType("logger.colors.info") == ConfigOptionType_None)
-        {
-            config.setString("logger.colors.info", "0x90EE90");
-        }
-        if (config.getType("logger.colors.warning") == ConfigOptionType_None)
-        {
-            config.setString("logger.colors.warning", "0xFFD700");
-        }
-        if (config.getType("logger.colors.error") == ConfigOptionType_None)
-        {
-            config.setString("logger.colors.error", "0xFFB266");
-        }
-        if (config.getType("logger.colors.fatal") == ConfigOptionType_None)
-        {
-            config.setString("logger.colors.fatal", "0xFF7F7F");
-        }
-        if (config.getType("logger.timestamp_format") == ConfigOptionType_None)
-        {
-            config.setString("logger.timestamp_format", "");
-        }
-        if (config.getType("logger.log_directory") == ConfigOptionType_None)
-        {
-            config.setString("logger.log_directory", "logs");
+            if (config.getType(key) == ConfigOptionType_None)
+            {
+                if (value.type() == typeid(char const*))
+                {
+                    config.setString(key, std::any_cast<const char*>(value));
+                }
+                else if (value.type() == typeid(bool))
+                {
+                    config.setBool(key, std::any_cast<bool>(value));
+                }
+            }
         }
     }
 }
@@ -273,6 +250,11 @@ bool OmpLoggerComponent::IsLoggingWithSource()
 bool OmpLoggerComponent::IsEnableSourceForAll()
 {
     return isEnableSourceForAll_;
+}
+
+bool OmpLoggerComponent::IsTimestampColorized()
+{
+    return isTimestampColorized_;
 }
 
 String OmpLoggerComponent::getLogTimestampFormat()
