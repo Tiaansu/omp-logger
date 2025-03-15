@@ -203,33 +203,46 @@ bool OmpLog::log_INTERNAL(AMX* amx, OmpLogger::ELogLevel level, StringView messa
     const std::time_t now = WorldTime::to_time_t(WorldTime::now());
     char timeStr[64] = { 0 };
 
+    std::string formattedTimestamp;
     if (!timestampFormat.empty())
     {
         std::strftime(timeStr, sizeof timeStr, timestampFormat.c_str(), std::localtime(&now));
-        fmt::print("[");
-        if (ompLogger->IsTimestampColorized())
-        {
-            fmt::print(fmt::fg(fmt::color::gray), timeStr);
-        }
-        else
-        {
-            fmt::print(timeStr);
-        }
-        fmt::print("] ");
+        formattedTimestamp = ompLogger->IsTimestampColorized() ? fmt::format(fmt::fg(fmt::color::gray), timeStr) : timeStr;
     }
 
-    fmt::print("[");
-    fmt::print(fmt::fg(getColor() == 0 ? fmt::color::light_yellow : fmt::rgb(getColor())), getName().data());
-    fmt::print("] [");
+    std::string formattedName = ompLogger->IsLogNameColorized()
+        ? fmt::format(fmt::fg(getColor() == 0 ? fmt::color::light_yellow : fmt::rgb(getColor())), getName().data())
+        : getName().data();
 
     std::string logLevelName = helpers::GetLogLevelName(level);
     if (!ompLogger->IsLogLevelNameCapitalized())
     {
         std::transform(logLevelName.begin(), logLevelName.end(), logLevelName.begin(), ::toupper);
     }
-    fmt::print(fmt::fg(ompLogger->getLogLevelColor(level)), logLevelName);
-    fmt::print("] {:s}\n", message.data());
+    std::string formattedLogLevelName = ompLogger->IsLogLevelColorized()
+        ? fmt::format(fmt::fg(ompLogger->getLogLevelColor(level)), logLevelName)
+        : logLevelName;
 
+    std::string formattedLog = ompLogger->getLogFormat();
+
+    size_t pos = 0;
+    if ((pos = formattedLog.find("{{timestamp}}")) != std::string::npos)
+    {
+        formattedLog.replace(pos, std::string("{{timestamp}}").length(), formattedTimestamp);
+    }
+    if ((pos = formattedLog.find("{{name}}")) != std::string::npos)
+    {
+        formattedLog.replace(pos, std::string("{{name}}").length(), formattedName);
+    }
+    if ((pos = formattedLog.find("{{log_level}}")) != std::string::npos)
+    {
+        formattedLog.replace(pos, std::string("{{log_level}}").length(), formattedLogLevelName);
+    }
+    if ((pos = formattedLog.find("{{message}}")) != std::string::npos)
+    {
+        formattedLog.replace(pos, std::string("{{message}}").length(), message.data());
+    }
+    fmt::println("{}", formattedLog);
     return logToFile_INTERNAL(amx, level, message, timeStr, logLevelName);
 }
 
@@ -239,7 +252,7 @@ bool OmpLog::logToFile_INTERNAL(AMX* amx, OmpLogger::ELogLevel level, StringView
 
     std::FILE
         *file = getFile(),
-        *serverLoggerFile = ompLogger->getServerLoggingFile();
+        *serverLoggerFile = ompLogger->getServerLogFile();
 
     if (file)
     {

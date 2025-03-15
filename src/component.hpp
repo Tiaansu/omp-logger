@@ -3,6 +3,7 @@
 #include <map>
 #include <string>
 #include <any>
+#include <string_view>
 
 #include <fmt/color.h>
 #include <sdk.hpp>
@@ -13,7 +14,7 @@
 #include "omp-log.hpp"
 #include "debug-manager.hpp"
 #include "logs-result.hpp"
-#include "common.hpp"
+#include "logger-config.hpp"
 
 class OmpLoggerComponent final
     : public IOmpLoggerComponent
@@ -23,27 +24,26 @@ class OmpLoggerComponent final
 private:
     std::map<std::string, std::any> config_ = 
     {
-        {LOGGER_CONFIG_KEY_ENABLE_SOURCE_FOR_ALL_LEVEL, false},
-        {LOGGER_CONFIG_KEY_DISPLAY_SOURCE, true},
-        {LOGGER_CONFIG_KEY_LOG_DIRECTORY, "logs"},
-        {LOGGER_CONFIG_KEY_IS_LOG_LEVEL_UPPERCASE, false},
-        {LOGGER_CONFIG_KEY_COLOR_DEBUG, "0xADD8E6"},
-        {LOGGER_CONFIG_KEY_COLOR_INFO, "0x90EE90"},
-        {LOGGER_CONFIG_KEY_COLOR_WARNING, "0xFFD700"},
-        {LOGGER_CONFIG_KEY_COLOR_ERROR, "0xFFB266"},
-        {LOGGER_CONFIG_KEY_COLOR_FATAL, "0xFF7F7F"},
-        {LOGGER_CONFIG_KEY_TIMESTAMP_FORMAT, "%Y-%m-%dT%H:%M:%S%z"},
-        {LOGGER_CONFIG_KEY_COLORIZED_TIMESTAMP, false}
+        {make_string(LoggerConfig::enable_source_for_all_levels), false},
+        {make_string(LoggerConfig::display_source),               true},
+        {make_string(LoggerConfig::log_level_capitalized),        true},
+        {make_string(LoggerConfig::log_directory),                "logs"},
+        {make_string(LoggerConfig::log_format),                   "[{{timestamp}}] [{{name}}] [{{log_level}}] {{message}}"},
+        {make_string(LoggerConfig::timestamp_format),             "%Y-%m-%dT%H:%M:%S%z"},
+        {make_string(LoggerConfig::Color::enabled_timestamp),     false},
+        {make_string(LoggerConfig::Color::enabled_log_level),     false},
+        {make_string(LoggerConfig::Color::enabled_name),          false},
+        {make_string(LoggerConfig::Color::Value::debug),          "0xADD8E6"},
+        {make_string(LoggerConfig::Color::Value::info),           "0x90EE90"},
+        {make_string(LoggerConfig::Color::Value::warning),        "0xFFD700"},
+        {make_string(LoggerConfig::Color::Value::error),          "0xFFB266"},
+        {make_string(LoggerConfig::Color::Value::fatal),          "0xFF7F7F"},
     };
 
     ICore* core_ = nullptr;
-
     IPawnComponent* pawn_ = nullptr;
-
     MarkedPoolStorage<OmpLog, IOmpLog, 1, 1000> pool_;
-
     MarkedPoolStorage<LogsResult, ILogsResult, 1, 5000> logsResults_;
-
     inline static OmpLoggerComponent* instance_ = nullptr;
 
     // configs
@@ -52,9 +52,17 @@ private:
     bool isLoggingWithSource_ = true;
     bool isEnableSourceForAll_ = false;
     bool isTimestampColorized_ = false;
+    bool isLogLevelColorized_ = false;
+    bool isLogNameColorized_ = false;
     String logTimestampFormat_;
     String logDirectoryPath_;
+    String logFormat_;
     std::FILE* serverLoggerFile_ = nullptr;
+
+    static std::string make_string(std::string_view sv)
+    {
+        return std::string(sv);
+    }
 
 public:
     ~OmpLoggerComponent();
@@ -119,19 +127,56 @@ public:
     }
 
     // API - Config
-    fmt::rgb getLogLevelColor(OmpLogger::ELogLevel level);
+    fmt::rgb getLogLevelColor(OmpLogger::ELogLevel level)
+    {
+        auto it = logLevelColors_.find(level);
+        return it == logLevelColors_.end() ? fmt::color::white : it->second;
+    }
+    
+    bool IsLogLevelNameCapitalized()
+    {
+        return isLogLevelNameCapitalized_;
+    }
 
-    bool IsLogLevelNameCapitalized();
+    bool IsLoggingWithSource()
+    {
+        return isLoggingWithSource_;
+    }
 
-    bool IsLoggingWithSource();
+    bool IsEnableSourceForAll()
+    {
+        return isEnableSourceForAll_;
+    }
 
-    bool IsEnableSourceForAll();
+    bool IsTimestampColorized()
+    {
+        return isTimestampColorized_;
+    }
 
-    bool IsTimestampColorized();
+    bool IsLogLevelColorized()
+    {
+        return isLogLevelColorized_;
+    }
 
-    String getLogTimestampFormat();
+    bool IsLogNameColorized()
+    {
+        return isLogNameColorized_;
+    }
 
-    std::FILE* getServerLoggingFile();
+    String getLogTimestampFormat()
+    {
+        return logTimestampFormat_;
+    }
+
+    String getLogFormat()
+    {
+        return logFormat_;
+    }
+
+    std::FILE* getServerLogFile()
+    {
+        return serverLoggerFile_;
+    }
 
     // Debugger
     void debugRegisterAMX(AMX* amx) override;

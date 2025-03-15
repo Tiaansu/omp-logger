@@ -90,21 +90,23 @@ void OmpLoggerComponent::onInit(IComponentList* components)
     core_->getEventDispatcher().addEventHandler(this);
 
     IConfig& config = core_->getConfig();
-    isLogLevelNameCapitalized_ = (config.getBool(LOGGER_CONFIG_KEY_IS_LOG_LEVEL_UPPERCASE)) ? (*config.getBool(LOGGER_CONFIG_KEY_IS_LOG_LEVEL_UPPERCASE)) : false;
-    isLoggingWithSource_ = (config.getBool(LOGGER_CONFIG_KEY_DISPLAY_SOURCE)) ? (*config.getBool(LOGGER_CONFIG_KEY_DISPLAY_SOURCE)) : true;
-    isEnableSourceForAll_ = (config.getBool(LOGGER_CONFIG_KEY_ENABLE_SOURCE_FOR_ALL_LEVEL)) ? (*config.getBool(LOGGER_CONFIG_KEY_ENABLE_SOURCE_FOR_ALL_LEVEL)) : false;
-    isTimestampColorized_ = (config.getBool(LOGGER_CONFIG_KEY_COLORIZED_TIMESTAMP)) ? (*config.getBool(LOGGER_CONFIG_KEY_COLORIZED_TIMESTAMP)) : false;
-    logTimestampFormat_ = String(config.getString(LOGGER_CONFIG_KEY_TIMESTAMP_FORMAT));
-    logDirectoryPath_ = String(config.getString(LOGGER_CONFIG_KEY_LOG_DIRECTORY));
-    core_->printLn("hello! %s=%s", LOGGER_CONFIG_KEY_LOG_DIRECTORY, logDirectoryPath_.c_str());
-
+    isLogLevelNameCapitalized_ = (config.getBool(make_string(LoggerConfig::log_level_capitalized))) ? (*config.getBool(make_string(LoggerConfig::log_level_capitalized))) : false;
+    isLoggingWithSource_ = (config.getBool(make_string(LoggerConfig::display_source))) ? (*config.getBool(make_string(LoggerConfig::display_source))) : true;
+    isEnableSourceForAll_ = (config.getBool(make_string(LoggerConfig::enable_source_for_all_levels))) ? (*config.getBool(make_string(LoggerConfig::enable_source_for_all_levels))) : false;
+    logTimestampFormat_ = String(config.getString(make_string(LoggerConfig::timestamp_format)));
+    logDirectoryPath_ = String(config.getString(make_string(LoggerConfig::log_directory)));
+    logFormat_ = String(config.getString(make_string(LoggerConfig::log_format)));
+    
     serverLoggerFile_ = ::fopen(String(config.getString("logging.file")).c_str(), "a");
-
-    logLevelColors_[OmpLogger::ELogLevel::Debug] = helpers::GetLogLevelColorFromConfig(LOGGER_CONFIG_KEY_COLOR_DEBUG);
-    logLevelColors_[OmpLogger::ELogLevel::Info] = helpers::GetLogLevelColorFromConfig(LOGGER_CONFIG_KEY_COLOR_INFO);
-    logLevelColors_[OmpLogger::ELogLevel::Warning] = helpers::GetLogLevelColorFromConfig(LOGGER_CONFIG_KEY_COLOR_WARNING);
-    logLevelColors_[OmpLogger::ELogLevel::Error] = helpers::GetLogLevelColorFromConfig(LOGGER_CONFIG_KEY_COLOR_ERROR);
-    logLevelColors_[OmpLogger::ELogLevel::Fatal] = helpers::GetLogLevelColorFromConfig(LOGGER_CONFIG_KEY_COLOR_FATAL);
+    
+    isTimestampColorized_ = (config.getBool(make_string(LoggerConfig::Color::enabled_timestamp))) ? (*config.getBool(make_string(LoggerConfig::Color::enabled_timestamp))) : false;
+    isLogLevelColorized_ = (config.getBool(make_string(LoggerConfig::Color::enabled_log_level))) ? (*config.getBool(make_string(LoggerConfig::Color::enabled_log_level))) : false;
+    isLogNameColorized_ = (config.getBool(make_string(LoggerConfig::Color::enabled_name))) ? (*config.getBool(make_string(LoggerConfig::Color::enabled_name))) : false;
+    logLevelColors_[OmpLogger::ELogLevel::Debug] = helpers::GetLogLevelColorFromConfig(make_string(LoggerConfig::Color::Value::debug));
+    logLevelColors_[OmpLogger::ELogLevel::Info] = helpers::GetLogLevelColorFromConfig(make_string(LoggerConfig::Color::Value::info));
+    logLevelColors_[OmpLogger::ELogLevel::Warning] = helpers::GetLogLevelColorFromConfig(make_string(LoggerConfig::Color::Value::warning));
+    logLevelColors_[OmpLogger::ELogLevel::Error] = helpers::GetLogLevelColorFromConfig(make_string(LoggerConfig::Color::Value::error));
+    logLevelColors_[OmpLogger::ELogLevel::Fatal] = helpers::GetLogLevelColorFromConfig(make_string(LoggerConfig::Color::Value::fatal));
 
     DynamicArray<StringView> mainScripts(config.getStringsCount("pawn.main_scripts"));
     config.getStrings("pawn.main_scripts", Span<StringView>(mainScripts.data(), mainScripts.size()));
@@ -229,44 +231,6 @@ OmpLoggerComponent::~OmpLoggerComponent()
         core_->getEventDispatcher().removeEventHandler(this);
     }
 }
-
-// API - Config
-fmt::rgb OmpLoggerComponent::getLogLevelColor(OmpLogger::ELogLevel level)
-{
-    auto it = logLevelColors_.find(level);
-    return it == logLevelColors_.end() ? fmt::color::white : it->second;
-}
-
-bool OmpLoggerComponent::IsLogLevelNameCapitalized()
-{
-    return isLogLevelNameCapitalized_;
-}
-
-bool OmpLoggerComponent::IsLoggingWithSource()
-{
-    return isLoggingWithSource_;
-}
-
-bool OmpLoggerComponent::IsEnableSourceForAll()
-{
-    return isEnableSourceForAll_;
-}
-
-bool OmpLoggerComponent::IsTimestampColorized()
-{
-    return isTimestampColorized_;
-}
-
-String OmpLoggerComponent::getLogTimestampFormat()
-{
-    return logTimestampFormat_;
-}
-
-std::FILE* OmpLoggerComponent::getServerLoggingFile()
-{
-    return serverLoggerFile_;
-}
-
 // API - Debugger
 void OmpLoggerComponent::debugRegisterAMX(AMX* amx)
 {
