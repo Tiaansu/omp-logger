@@ -37,16 +37,20 @@ main()
 You can check this [repository](https://github.com/Tiaansu/greet-component) for the example on how to use this component to another component.
 
 ## Configurations
-- `logger.log_level_capitalized`: whether print the log level name in uppercase or capitalize format. (default: `false`)
+- `logger.is_log_level_capitalized`: Whether print the log level name in uppercase or capitalize format. (default: `false`)
 - `logger.display_source`: If set to `true`, the log printed in the file will have source. (default: `true`)
-- `logger.enable_source_for_all`: If set to `true`, all log levels printed in the file will have source (file:line), otherwise only `Warning`, `Error`, and `Fatal` will have it. (default: `false`)
+- `logger.enable_source_for_all_level`: If set to `true`, all log levels printed in the file will have source (file:line), otherwise only `Warning`, `Error`, and `Fatal` will have it. (default: `false`)
 - `logger.timestamp_format`: The timestamp format for the log. (default: `%Y-%m-%dT%H:%M:%S%z`)
+- `logger.log_format`: The log format. (default: `[{{timestamp}}] [{{name}}] [{{log_level}}] {{message}}`)
 - `logger.log_directory`: The directory/path where the log files will be created. (default: `logs`)
-- `logger.colors.debug`: The color for `debug` log level. (default: `0xADD8E6`)
-- `logger.colors.info`: The color for `info` log level. (default: `0x90EE90`)
-- `logger.colors.warning`: The color for `warning` log level. (default: `0xFFD700`)
-- `logger.colors.error`: The color for `error` log level. (default: `0xFFB266`)
-- `logger.colors.fatal`: The color for `fatal` log level. (default: `0xFF7F7F`)
+- `logger.color.enabled_timestamp`: Whether the timestamp be colorized or not. (default: `false`)
+- `logger.color.enabled_log_level`: Whether the log level be colorized or not. (default: `false`)
+- `logger.color.enabled_name`: Whether the name be colorized or not. (default: `false`)
+- `logger.color.debug`: The color for `debug` log level. (default: `0xADD8E6`)
+- `logger.color.info`: The color for `info` log level. (default: `0x90EE90`)
+- `logger.color.warning`: The color for `warning` log level. (default: `0xFFD700`)
+- `logger.color.error`: The color for `error` log level. (default: `0xFFB266`)
+- `logger.color.fatal`: The color for `fatal` log level. (default: `0xFF7F7F`)
 
 ## Thanks to
 - [Amir's omp-node](https://github.com/AmyrAhmady/omp-node) (I copied it's `include` style so other components can use this component)
