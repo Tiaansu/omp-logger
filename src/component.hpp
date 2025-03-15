@@ -89,7 +89,7 @@ public:
     
     SemanticVersion componentVersion() const override
     {
-        return SemanticVersion(0, 0, 1, 0);
+        return SemanticVersion(1, 0, 1, 0);
     }
 
     void onTick(Microseconds elapsed, TimePoint now) override;
