@@ -6,7 +6,7 @@
 || config="$CONFIG"
 
 docker build \
-    -t omp-logger/build:ubuntu-18.04 ./ \
+    -t omp-logger/build:ubuntu-20.04 ./ \
 || exit 1
 
 folders=('build')
@@ -24,4 +24,4 @@ docker run \
     -v $PWD/..:/code \
     -v $PWD/build:/code/build \
     -e CONFIG=${config} \
-    omp-logger/build:ubuntu-18.04
+    omp-logger/build:ubuntu-20.04
