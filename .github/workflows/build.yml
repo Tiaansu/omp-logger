@@ -85,7 +85,7 @@ jobs:
           mkdir components
           mkdir -p qawno/include
           cd ..
-          mv docker/build/src/omp-logger.so ./dist/components/omp-logger.so
+          cp docker/build/src/omp-logger.so ./dist/components/omp-logger.so
           mv omp-logger.inc ./dist/qawno/include/omp-logger.inc
 
       - name: Upload artifacts
