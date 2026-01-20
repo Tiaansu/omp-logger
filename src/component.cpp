@@ -44,6 +44,11 @@ bool OmpLoggerComponent::destroyLogger(IOmpLogger* logger)
     return true;
 }
 
+IOmpLogger* OmpLoggerComponent::getLogger(int id)
+{
+    return pool_.get(id);
+}
+
 // API - Results
 ILogsResult* OmpLoggerComponent::initLogsResult(std::vector<std::string> logs)
 {
@@ -60,6 +65,57 @@ bool OmpLoggerComponent::deleteLogsResult(ILogsResult* result)
 ILogsResult* OmpLoggerComponent::getLogsResult(int id)
 {
     return logsResults_.get(id);
+}
+
+// API - Config
+fmt::rgb OmpLoggerComponent::getLogLevelColor(OmpLogger::LogLevel level) const 
+{
+    return logLevelColors_.at(level);
+}
+
+bool OmpLoggerComponent::isLogLevelNameCapitalized() const
+{
+    return isLogLevelNameCapitalized_;
+}
+
+bool OmpLoggerComponent::isLoggingWithSource() const
+{
+    return isLoggingWithSource_;
+}
+
+bool OmpLoggerComponent::isEnableSourceForAll() const
+{
+    return isEnableSourceForAll_;
+}
+
+bool OmpLoggerComponent::isTimestampColorized() const
+{
+    return isTimestampColorized_;
+}
+
+bool OmpLoggerComponent::isLogLevelColorized() const
+{
+    return isLogLevelColorized_;
+}
+
+bool OmpLoggerComponent::isLogNameColorized() const
+{
+    return isLogNameColorized_;
+}
+
+String OmpLoggerComponent::getLogTimestampFormat() const
+{
+    return logTimestampFormat_;
+}
+
+String OmpLoggerComponent::getLogFormat() const
+{
+    return logFormat_;
+}
+
+std::FILE* OmpLoggerComponent::getServerLogFile() const
+{
+    return serverLoggerFile_;
 }
 
 // Callbacks
@@ -157,14 +213,14 @@ void OmpLoggerComponent::provideConfiguration(ILogger& logger, IEarlyConfig& con
 void OmpLoggerComponent::free()
 {
     core_->printLn("[omp-logger] Logger releasing...");
-    // for (auto logger : pool_)
-    // {
-    //     std::FILE* file = logger->getFile();
-    //     if (file != nullptr)
-    //     {
-    //         fclose(file);
-    //     }
-    // }
+    for (auto logger : pool_)
+    {
+        std::FILE* file = logger->getFile();
+        if (file != nullptr)
+        {
+            fclose(file);
+        }
+    }
 
     if (serverLoggerFile_ != nullptr)
     {

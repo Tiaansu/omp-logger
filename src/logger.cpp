@@ -55,7 +55,7 @@ bool Logger::log__INTERNAL(const char* file, int line, OmpLogger::LogLevel level
     std::string formattedTimestamp;
     if (!timestampFormat.empty())
     {
-        std:;strftime(timeStr, sizeof timeStr, timestampFormat.c_str(), std::localtime(&now));
+        std::strftime(timeStr, sizeof timeStr, timestampFormat.c_str(), std::localtime(&now));
         formattedTimestamp = component->isTimestampColorized() ? fmt::format(fmt::fg(fmt::color::gray), timeStr) : timeStr;
     }
 

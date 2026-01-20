@@ -5,6 +5,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+add_definitions(
+	-DHAVE_STDINT_H=1
+	-DPAWN_CELL_SIZE=32
+)
+
 if (WIN32)
     add_definitions(
             -D_CRT_SECURE_NO_WARNINGS

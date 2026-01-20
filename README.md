@@ -9,7 +9,7 @@ Example usage:
 ```c
 #include <open.mp>
 // if you want to modify the default log level:
-// #define #define DEFAULT_OMP_LOG_LEVEL       (Info | Warning | Error)
+// #define DEFAULT_OMP_LOGGER_LEVEL       (Info | Warning | Error | Debug)
 #include <omp-logger>
 
 main()
@@ -37,7 +37,7 @@ main()
 You can check this [repository](https://github.com/Tiaansu/greet-component) for the example on how to use this component to another component.
 
 ## Configurations
-- `logger.is_log_level_capitalized`: Whether print the log level name in uppercase or capitalize format. (default: `false`)
+- `logger.is_log_level_capitalized`: Whether print the log level name in uppercase or capitalize format. (default: `true`)
 - `logger.display_source`: If set to `true`, the log printed in the file will have source. (default: `true`)
 - `logger.enable_source_for_all_level`: If set to `true`, all log levels printed in the file will have source (file:line), otherwise only `Warning`, `Error`, and `Fatal` will have it. (default: `false`)
 - `logger.timestamp_format`: The timestamp format for the log. (default: `%Y-%m-%dT%H:%M:%S%z`)
