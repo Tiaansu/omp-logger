@@ -2,18 +2,9 @@
 
 #include <sdk.hpp>
 
-#include "../src/amx/amx.h"
-#include "../src/amx/amxdbg.h"
-
-struct AmxDebugInfo
-{
-    long line;
-    const char* function;
-};
-
 namespace OmpLogger
 {
-    enum ELogLevel
+    enum LogLevel
     {
         None = 0,
         Debug = 1,
@@ -23,18 +14,18 @@ namespace OmpLogger
         Fatal = 16
     };
 
-    inline ELogLevel operator|(ELogLevel a, ELogLevel b)
+    inline LogLevel operator|(LogLevel a, LogLevel b)
     {
-        return static_cast<ELogLevel>(static_cast<int>(a) | static_cast<int>(b));
+        return static_cast<LogLevel>(static_cast<int>(a) | static_cast<int>(b));
     }
 
-    inline ELogLevel &operator|=(ELogLevel &in, ELogLevel val)
+    inline LogLevel &operator|=(LogLevel &in, LogLevel val)
     {
         return in = in | val;
     }
 }
 
-struct IOmpLog;
+struct IOmpLogger;
 struct PaginatedResult;
 
 static const UID OmpLoggerComponent_UID = UID(0xAB3BC9C4E583C8B4);
@@ -43,43 +34,30 @@ class IOmpLoggerComponent : public IComponent
 public:
     PROVIDE_UID(OmpLoggerComponent_UID);
 
-    virtual IOmpLog* createLogger(StringView name, int32_t color, OmpLogger::ELogLevel level, bool isPlugin) = 0;
+    virtual IOmpLogger* createLogger(StringView name, int32_t color, OmpLogger::LogLevel level, bool isPlugin) = 0;
 
-    virtual bool destroyLogger(IOmpLog* log) = 0;
+    virtual bool destroyLogger(IOmpLogger* log) = 0;
 
-    virtual IOmpLog* getLogger(int id) = 0;
-
-    // Debugger
-    virtual void debugRegisterAMX(AMX* amx) = 0;
-    
-    virtual void debugEraseAMX(AMX* amx) = 0;
+    virtual IOmpLogger* getLogger(int id) = 0;
 };
 
-struct IOmpLog
+struct IOmpLogger
 {
     virtual int getID() const = 0;
 
     virtual StringView getName() const = 0;
 
-    virtual OmpLogger::ELogLevel getLogLevel() const = 0;
+    virtual OmpLogger::LogLevel getLogLevel() const = 0;
 
-    virtual bool isLogLevel(OmpLogger::ELogLevel level) const = 0;
+    virtual bool isLogLevel(OmpLogger::LogLevel level) const = 0;
 
     virtual std::FILE* getFile() const = 0;
 
     virtual uint32_t getColor() const = 0;
 
     virtual PaginatedResult fetchLogs(int linesPerPage, int pageStart, const std::string& searchTerm, bool caseSensitive) const = 0;
-
-    virtual bool log(AMX* amx, OmpLogger::ELogLevel level, StringView message) const = 0;
     
-    virtual bool log(OmpLogger::ELogLevel level, StringView message) const = 0;
-};
-
-struct AmxFuncCallInfo
-{
-    long line;
-    const char* file;
+    virtual bool log(const char* file, int line, OmpLogger::LogLevel level, StringView message) const = 0;
 };
 
 class OmpLoggerManager

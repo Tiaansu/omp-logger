@@ -1,4 +1,4 @@
-#include "logs-result.hpp"
+#include "result.hpp"
 #include "component.hpp"
 
 using namespace Impl;

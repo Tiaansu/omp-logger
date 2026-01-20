@@ -1,33 +1,32 @@
 #pragma once
 
-
-template<class T>
+template <class T>
 class Singleton
 {
 protected:
-	static T *m_Instance;
+    static T *m_Instance;
 
 public:
-	Singleton()
-	{ }
-	virtual ~Singleton()
-	{ }
+    Singleton() { }
+    virtual ~Singleton() { }
 
-	inline static T *Get()
-	{
-		if (m_Instance == nullptr)
-			m_Instance = new T;
-		return m_Instance;
-	}
+    inline static T *Get()
+    {
+        if (m_Instance == nullptr)
+        {
+            m_Instance = new T;
+        }
+        return m_Instance;
+    }
 
-	inline static void Destroy()
-	{
-		if (m_Instance != nullptr)
-		{
-			delete m_Instance;
-			m_Instance = nullptr;
-		}
-	}
+    inline static void Destroy()
+    {
+        if (m_Instance != nullptr)
+        {
+            delete m_Instance;
+            m_Instance = nullptr;
+        }
+    }
 };
 
 template <class T>

@@ -2,19 +2,19 @@
 #include <iostream>
 #include "utils.hpp"
 
-const char* helpers::GetLogLevelName(OmpLogger::ELogLevel level)
+const char* helpers::GetLogLevelName(OmpLogger::LogLevel level)
 {
     switch (level)
     {
-        case OmpLogger::ELogLevel::Debug:
+        case OmpLogger::LogLevel::Debug:
             return "Debug";
-        case OmpLogger::ELogLevel::Info:
+        case OmpLogger::LogLevel::Info:
             return "Info";
-        case OmpLogger::ELogLevel::Warning:
+        case OmpLogger::LogLevel::Warning:
             return "Warning";
-        case OmpLogger::ELogLevel::Error:
+        case OmpLogger::LogLevel::Error:
             return "Error";
-        case OmpLogger::ELogLevel::Fatal:
+        case OmpLogger::LogLevel::Fatal:
             return "Fatal";
     }
     return "<unknown>";
@@ -67,22 +67,4 @@ uint32_t helpers::StringToHex(const std::string& hex)
         ret = sscanf(hex.c_str(), "%x", &result);
     }
     return ret == 1 ? result : 0xFFFFFF;
-}
-
-std::string helpers::SanitizeScriptName(const std::string& name)
-{
-    std::string output = name;
-    
-    size_t amxPos = output.rfind(".amx");
-    if (amxPos != std::string::npos && amxPos + 4 == output.length())
-    {
-        output.replace(amxPos, 4, "");
-    }
-
-    std::size_t spacePos = output.find(' ');
-    if (spacePos != std::string::npos)
-    {
-        return output.substr(0, spacePos);
-    }
-    return output;
 }

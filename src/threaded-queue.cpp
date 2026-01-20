@@ -1,6 +1,5 @@
 #include "threaded-queue.hpp"
 
-
 void ThreadedQueue::Dispatch(ThreadedQueue::Callback callback)
 {
     std::lock_guard<std::mutex> lock_guard(m_Mutex);

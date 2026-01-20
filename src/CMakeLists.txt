@@ -1,7 +1,3 @@
-include(AMXConfig)
-
-add_subdirectory(amx)
-
 file(GLOB_RECURSE OMPLOGGER_FILES
     *.hpp
     *.cpp
@@ -30,6 +26,5 @@ target_link_libraries(${PROJECT_NAME}
     ${LIBRARIES}
     OMP-SDK
     fmt
-    amx
     omp-logger-sdk
 )

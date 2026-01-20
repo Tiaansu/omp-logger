@@ -10,6 +10,3 @@
 [submodule "deps/fmt"]
 	path = deps/fmt
 	url = https://github.com/fmtlib/fmt.git
-[submodule "deps/samp-cmake"]
-	path = deps/samp-cmake
-	url = git@github.com:AmyrAhmady/samp-cmake-modules.git

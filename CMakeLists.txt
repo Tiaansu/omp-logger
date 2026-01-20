@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
-project(omp-logger LANGUAGES C CXX VERSION 0.0.1)
+project(omp-logger LANGUAGES C CXX VERSION 2.0.0)
 
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/deps/samp-cmake")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)

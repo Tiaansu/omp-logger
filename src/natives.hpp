@@ -7,9 +7,9 @@
 namespace pawn_natives
 {
     template <>
-    struct ParamLookup<IOmpLog>
+    struct ParamLookup<IOmpLogger>
     {
-        static IOmpLog* Val(cell ref) noexcept
+        static IOmpLogger* Val(cell ref) noexcept
         {
             if (auto pool = OmpLoggerComponent::Get())
             {
@@ -20,22 +20,22 @@ namespace pawn_natives
     };
 
     template <>
-    class ParamCast<IOmpLog*>
+    class ParamCast<IOmpLogger*>
     {
     public:
         ParamCast(AMX* amx, cell* params, int idx) noexcept
         {
-            value_ = ParamLookup<IOmpLog>::Val(params[idx]);
+            value_ = ParamLookup<IOmpLogger>::Val(params[idx]);
         }
 
         ~ParamCast()
         {
         }
 
-        ParamCast(ParamCast<IOmpLog*> const&) = delete;
-        ParamCast(ParamCast<IOmpLog*>&&) = delete;
+        ParamCast(ParamCast<IOmpLogger*> const&) = delete;
+        ParamCast(ParamCast<IOmpLogger*>&&) = delete;
 
-        operator IOmpLog*()
+        operator IOmpLogger*()
         {
             return value_;
         }
@@ -48,27 +48,19 @@ namespace pawn_natives
         static constexpr int Size = 1;
 
     private:
-        IOmpLog* value_;
+        IOmpLogger* value_;
     };
 
     template <>
-    class ParamCast<IOmpLog&>
+    class ParamCast<IOmpLogger&>
     {
     public:
         ParamCast(AMX* amx, cell* params, int idx)
         {
-            value_ = ParamLookup<IOmpLog>::Val(params[idx]);
+            value_ = ParamLookup<IOmpLogger>::Val(params[idx]);
             if (value_ == nullptr)
             {
-                AmxFuncCallInfo dest;
-                if (!DebugManager::Get()->GetFunctionCall(amx, amx->cip, dest))
-                {
-                    OmpLoggerComponent::Get()->getCore()->logLn(LogLevel::Warning, "Invalid logger id %i", static_cast<int>(params[idx]));
-                }
-                else
-                {
-                    OmpLoggerComponent::Get()->getCore()->logLn(LogLevel::Warning, "Invalid logger id %i (%s:%i)",  static_cast<int>(params[idx]), dest.file, static_cast<int>(dest.line));
-                }
+                OmpLoggerComponent::Get()->getCore()->logLn(LogLevel::Warning, "Invalid logger id %i", static_cast<int>(params[idx]));
                 error_ = true;
             }
         }
@@ -77,10 +69,10 @@ namespace pawn_natives
         {
         }
 
-        ParamCast(ParamCast<IOmpLog&> const&) = delete;
-        ParamCast(ParamCast<IOmpLog&>&&) = delete;
+        ParamCast(ParamCast<IOmpLogger&> const&) = delete;
+        ParamCast(ParamCast<IOmpLogger&>&&) = delete;
 
-        operator IOmpLog&()
+        operator IOmpLogger&()
         {
             return *value_;
         }
@@ -93,12 +85,12 @@ namespace pawn_natives
         static constexpr int Size = 1;
 
     private:
-        IOmpLog* value_;
+        IOmpLogger* value_;
         bool error_ = false;
     };
 
     template <>
-    class ParamCast<const IOmpLog&>
+    class ParamCast<const IOmpLogger&>
     {
     public:
         ParamCast(AMX*, cell*, int) = delete;
@@ -160,15 +152,7 @@ namespace pawn_natives
             value_ = ParamLookup<ILogsResult>::Val(params[idx]);
             if (value_ == nullptr)
             {
-                AmxFuncCallInfo dest;
-                if (!DebugManager::Get()->GetFunctionCall(amx, amx->cip, dest))
-                {
-                    OmpLoggerComponent::Get()->getCore()->logLn(LogLevel::Warning, "Invalid logs result id %i", static_cast<int>(params[idx]));
-                }
-                else
-                {
-                    OmpLoggerComponent::Get()->getCore()->logLn(LogLevel::Warning, "Invalid logs result id %i (%s:%i)",  static_cast<int>(params[idx]), dest.file, static_cast<int>(dest.line));
-                }
+                OmpLoggerComponent::Get()->getCore()->logLn(LogLevel::Warning, "Invalid logs result id %i", static_cast<int>(params[idx]));
                 error_ = true;
             }
         }

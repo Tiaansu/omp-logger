@@ -11,10 +11,9 @@
 #include <Impl/pool_impl.hpp>
 
 #include "omp-logger.hpp"
-#include "omp-log.hpp"
-#include "debug-manager.hpp"
-#include "logs-result.hpp"
 #include "logger-config.hpp"
+#include "logger.hpp"
+#include "result.hpp"
 
 class OmpLoggerComponent final
     : public IOmpLoggerComponent
@@ -42,12 +41,12 @@ private:
 
     ICore* core_ = nullptr;
     IPawnComponent* pawn_ = nullptr;
-    MarkedPoolStorage<OmpLog, IOmpLog, 1, 1000> pool_;
+    MarkedPoolStorage<Logger, IOmpLogger, 1, 1000> pool_;
     MarkedPoolStorage<LogsResult, ILogsResult, 1, 5000> logsResults_;
     inline static OmpLoggerComponent* instance_ = nullptr;
 
     // configs
-    std::map<OmpLogger::ELogLevel, fmt::rgb> logLevelColors_ = {};
+    std::map<OmpLogger::LogLevel, fmt::rgb> logLevelColors_ = {};
     bool isLogLevelNameCapitalized_ = false;
     bool isLoggingWithSource_ = true;
     bool isEnableSourceForAll_ = false;
@@ -67,18 +66,14 @@ private:
 public:
     ~OmpLoggerComponent();
 
-    // API
-    IOmpLog* createLogger(StringView name, int32_t color, OmpLogger::ELogLevel level, bool isPlugin) override;
+    // API - Logger
+    IOmpLogger* createLogger(StringView name, int32_t color, OmpLogger::LogLevel level, bool isPlugin) override;
+    bool destroyLogger(IOmpLogger* logger) override;
+    IOmpLogger* getLogger(int id) override;
 
-    bool destroyLogger(IOmpLog* logger) override;
-
-    IOmpLog* getLogger(int id) override;
-
-    // Fetch logs
+    // API - Result
     ILogsResult* initLogsResult(std::vector<std::string> logs);
-
     bool deleteLogsResult(ILogsResult* result);
-
     ILogsResult* getLogsResult(int id);
 
     // Component
@@ -86,30 +81,21 @@ public:
     {
         return "Logger";
     }
-    
+
     SemanticVersion componentVersion() const override
     {
-        return SemanticVersion(1, 0, 1, 0);
+        return SemanticVersion(2, 0, 0, 0);
     }
 
     void onTick(Microseconds elapsed, TimePoint now) override;
-    
     void onLoad(ICore* c) override;
-
     void onInit(IComponentList* components) override;
-
     void onReady() override;
-
     void onFree(IComponent* component) override;
-
     void free() override;
-
     void reset() override;
-
     void onAmxLoad(IPawnScript& script) override;
-
     void onAmxUnload(IPawnScript& script) override;
-
     void provideConfiguration(ILogger& logger, IEarlyConfig& config, bool defaults) override;
 
     static OmpLoggerComponent* Get()
@@ -127,63 +113,14 @@ public:
     }
 
     // API - Config
-    fmt::rgb getLogLevelColor(OmpLogger::ELogLevel level)
-    {
-        auto it = logLevelColors_.find(level);
-        return it == logLevelColors_.end() ? fmt::color::white : it->second;
-    }
-    
-    bool IsLogLevelNameCapitalized()
-    {
-        return isLogLevelNameCapitalized_;
-    }
-
-    bool IsLoggingWithSource()
-    {
-        return isLoggingWithSource_;
-    }
-
-    bool IsEnableSourceForAll()
-    {
-        return isEnableSourceForAll_;
-    }
-
-    bool IsTimestampColorized()
-    {
-        return isTimestampColorized_;
-    }
-
-    bool IsLogLevelColorized()
-    {
-        return isLogLevelColorized_;
-    }
-
-    bool IsLogNameColorized()
-    {
-        return isLogNameColorized_;
-    }
-
-    String getLogTimestampFormat()
-    {
-        return logTimestampFormat_;
-    }
-
-    String getLogFormat()
-    {
-        return logFormat_;
-    }
-
-    std::FILE* getServerLogFile()
-    {
-        return serverLoggerFile_;
-    }
-
-    // Debugger
-    void debugRegisterAMX(AMX* amx) override;
-
-    void debugEraseAMX(AMX* amx) override;
-
-    bool debugInitData(const char* filepath);
-
-    bool debugGetFunctionCall(AMX* const amx, ucell address, AmxFuncCallInfo& dest);
+    fmt::rgb getLogLevelColor(OmpLogger::LogLevel level) const;
+    bool isLogLevelNameCapitalized() const;
+    bool isLoggingWithSource() const;
+    bool isEnableSourceForAll() const;
+    bool isTimestampColorized() const;
+    bool isLogLevelColorized() const;
+    bool isLogNameColorized() const;
+    String getLogTimestampFormat() const;
+    String getLogFormat() const;
+    std::FILE* getServerLogFile() const;
 };

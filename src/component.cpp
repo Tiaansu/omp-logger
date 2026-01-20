@@ -5,19 +5,19 @@
 #include "helpers/utils.hpp"
 #include "threaded-queue.hpp"
 
-// API
-IOmpLog* OmpLoggerComponent::createLogger(StringView name, int32_t color, OmpLogger::ELogLevel level, bool isPlugin)
+// API - Logger
+IOmpLogger* OmpLoggerComponent::createLogger(StringView name, int32_t color, OmpLogger::LogLevel level, bool isPlugin)
 {
     String path = name.data();
     std::replace(path.begin(), path.end(), '/', '_');
 
     auto filepath = fmt::format("{}/{}{}.log", logDirectoryPath_, isPlugin ? "plugins/" : "", name);
-
+    
     bool ret = helpers::CreatePathRecursively(filepath);
 
     if (!ret)
     {
-        core_->logLn(LogLevel::Error, "Failed to create log file \"%s\".", filepath.c_str());
+        core_->logLn(LogLevel::Error, "Failed to create log directory for logger %.*s", name.length(), name.data());
         return nullptr;
     }
 
@@ -30,26 +30,21 @@ IOmpLog* OmpLoggerComponent::createLogger(StringView name, int32_t color, OmpLog
     std::FILE* file = ::fopen(filepath.c_str(), "a+");
     if (file == nullptr)
     {
-        core_->logLn(LogLevel::Error, "Failed to open log file \"%s\".", filepath.c_str());
+        core_->logLn(LogLevel::Error, "Failed to open log file \"%s\" for logger %.*s", filepath.c_str(), name.length(), name.data());
         return nullptr;
     }
 
     return pool_.emplace(name, color, level, file);
 }
 
-bool OmpLoggerComponent::destroyLogger(IOmpLog* logger)
+bool OmpLoggerComponent::destroyLogger(IOmpLogger* logger)
 {
-    int id = static_cast<IOmpLog*>(logger)->getID();
+    int id = static_cast<IOmpLogger*>(logger)->getID();
     pool_.release(id, false);
     return true;
 }
 
-IOmpLog* OmpLoggerComponent::getLogger(int id)
-{
-    return pool_.get(id);
-}
-
-// Fetch logs
+// API - Results
 ILogsResult* OmpLoggerComponent::initLogsResult(std::vector<std::string> logs)
 {
     return logsResults_.emplace(logs);
@@ -90,6 +85,7 @@ void OmpLoggerComponent::onInit(IComponentList* components)
     core_->getEventDispatcher().addEventHandler(this);
 
     IConfig& config = core_->getConfig();
+
     isLogLevelNameCapitalized_ = (config.getBool(make_string(LoggerConfig::log_level_capitalized))) ? (*config.getBool(make_string(LoggerConfig::log_level_capitalized))) : false;
     isLoggingWithSource_ = (config.getBool(make_string(LoggerConfig::display_source))) ? (*config.getBool(make_string(LoggerConfig::display_source))) : true;
     isEnableSourceForAll_ = (config.getBool(make_string(LoggerConfig::enable_source_for_all_levels))) ? (*config.getBool(make_string(LoggerConfig::enable_source_for_all_levels))) : false;
@@ -102,27 +98,11 @@ void OmpLoggerComponent::onInit(IComponentList* components)
     isTimestampColorized_ = (config.getBool(make_string(LoggerConfig::Color::enabled_timestamp))) ? (*config.getBool(make_string(LoggerConfig::Color::enabled_timestamp))) : false;
     isLogLevelColorized_ = (config.getBool(make_string(LoggerConfig::Color::enabled_log_level))) ? (*config.getBool(make_string(LoggerConfig::Color::enabled_log_level))) : false;
     isLogNameColorized_ = (config.getBool(make_string(LoggerConfig::Color::enabled_name))) ? (*config.getBool(make_string(LoggerConfig::Color::enabled_name))) : false;
-    logLevelColors_[OmpLogger::ELogLevel::Debug] = helpers::GetLogLevelColorFromConfig(make_string(LoggerConfig::Color::Value::debug));
-    logLevelColors_[OmpLogger::ELogLevel::Info] = helpers::GetLogLevelColorFromConfig(make_string(LoggerConfig::Color::Value::info));
-    logLevelColors_[OmpLogger::ELogLevel::Warning] = helpers::GetLogLevelColorFromConfig(make_string(LoggerConfig::Color::Value::warning));
-    logLevelColors_[OmpLogger::ELogLevel::Error] = helpers::GetLogLevelColorFromConfig(make_string(LoggerConfig::Color::Value::error));
-    logLevelColors_[OmpLogger::ELogLevel::Fatal] = helpers::GetLogLevelColorFromConfig(make_string(LoggerConfig::Color::Value::fatal));
-
-    DynamicArray<StringView> mainScripts(config.getStringsCount("pawn.main_scripts"));
-    config.getStrings("pawn.main_scripts", Span<StringView>(mainScripts.data(), mainScripts.size()));
-
-    for (auto& script : mainScripts)
-    {
-        String filepath = "gamemodes/" + helpers::SanitizeScriptName(String(script)) + ".amx";
-        debugInitData(filepath.c_str());
-    }
-
-    DynamicArray<StringView> sideScripts(config.getStringsCount("pawn.side_scripts"));
-    config.getStrings("pawn.side_scripts", Span<StringView>(sideScripts.data(), sideScripts.size()));
-    for (auto& script : sideScripts)
-    {
-        debugInitData(String(script).c_str());
-    }
+    logLevelColors_[OmpLogger::LogLevel::Debug] = helpers::GetLogLevelColorFromConfig(make_string(LoggerConfig::Color::Value::debug));
+    logLevelColors_[OmpLogger::LogLevel::Info] = helpers::GetLogLevelColorFromConfig(make_string(LoggerConfig::Color::Value::info));
+    logLevelColors_[OmpLogger::LogLevel::Warning] = helpers::GetLogLevelColorFromConfig(make_string(LoggerConfig::Color::Value::warning));
+    logLevelColors_[OmpLogger::LogLevel::Error] = helpers::GetLogLevelColorFromConfig(make_string(LoggerConfig::Color::Value::error));
+    logLevelColors_[OmpLogger::LogLevel::Fatal] = helpers::GetLogLevelColorFromConfig(make_string(LoggerConfig::Color::Value::fatal));
 }
 
 void OmpLoggerComponent::onReady()
@@ -177,14 +157,14 @@ void OmpLoggerComponent::provideConfiguration(ILogger& logger, IEarlyConfig& con
 void OmpLoggerComponent::free()
 {
     core_->printLn("[omp-logger] Logger releasing...");
-    for (auto logger : pool_)
-    {
-        std::FILE* file = logger->getFile();
-        if (file != nullptr)
-        {
-            fclose(file);
-        }
-    }
+    // for (auto logger : pool_)
+    // {
+    //     std::FILE* file = logger->getFile();
+    //     if (file != nullptr)
+    //     {
+    //         fclose(file);
+    //     }
+    // }
 
     if (serverLoggerFile_ != nullptr)
     {
@@ -204,15 +184,11 @@ void OmpLoggerComponent::reset()
 
 void OmpLoggerComponent::onAmxLoad(IPawnScript& script)
 {
-    AMX* amx = script.GetAMX();
-    pawn_natives::AmxLoad(amx);
-    debugRegisterAMX(amx);
+    pawn_natives::AmxLoad(script.GetAMX());
 }
 
 void OmpLoggerComponent::onAmxUnload(IPawnScript& script)
 {
-    AMX* amx = script.GetAMX();
-    debugEraseAMX(amx);
 }
 
 void OmpLoggerComponent::onTick(Microseconds elapsed, TimePoint now)
@@ -230,24 +206,4 @@ OmpLoggerComponent::~OmpLoggerComponent()
     {
         core_->getEventDispatcher().removeEventHandler(this);
     }
-}
-// API - Debugger
-void OmpLoggerComponent::debugRegisterAMX(AMX* amx)
-{
-    DebugManager::Get()->RegisterAMX(amx);
-}
-
-void OmpLoggerComponent::debugEraseAMX(AMX* amx)
-{
-    DebugManager::Get()->EraseAMX(amx);
-}
-
-bool OmpLoggerComponent::debugInitData(const char* filepath)
-{
-    return DebugManager::Get()->InitDebugData(filepath);
-}
-
-bool OmpLoggerComponent::debugGetFunctionCall(AMX* const amx, ucell address, AmxFuncCallInfo& dest)
-{
-    return DebugManager::Get()->GetFunctionCall(amx, address, dest);
 }

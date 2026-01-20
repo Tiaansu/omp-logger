@@ -12,61 +12,56 @@
 #include "threaded-queue.hpp"
 #include "helpers/format.hpp"
 
-SCRIPT_API(Logger_Create, int(std::string const& name, int32_t color, OmpLogger::ELogLevel level))
+SCRIPT_API(Logger_Create, int(std::string const& name, int32_t color, OmpLogger::LogLevel level))
 {
-    auto ompLogger = OmpLoggerComponent::Get();
-    auto ret = ompLogger->createLogger(name, static_cast<uint32_t>(color), level, false);
-    return ret != nullptr ? ret->getID() : -1;
+    auto component = OmpLoggerComponent::Get();
+    auto ret = component->createLogger(name, static_cast<uint32_t>(color), level, false);
+    return ret ? ret->getID() : -1;
 }
 
-SCRIPT_API(Logger_Destroy, bool(IOmpLog& logger))
+SCRIPT_API(Logger_Destroy, bool(IOmpLogger& logger))
 {
-    auto ompLogger = OmpLoggerComponent::Get();
-    return ompLogger->destroyLogger(&logger);
+    auto component = OmpLoggerComponent::Get();
+    bool ret = component->destroyLogger(&logger);
+    return ret;
 }
 
-SCRIPT_API(Logger_Log, bool(IOmpLog& logger, OmpLogger::ELogLevel level, cell const* format))
+SCRIPT_API(_Logger_Log, bool(std::string const& file, int line, IOmpLogger& logger, OmpLogger::LogLevel level, cell const* format))
 {
-    AMX* amx = GetAMX();
-    return logger.log(amx, level, AmxStringFormatter(format, amx, GetParams(), 3));
+    return logger.log(file.c_str(), line, level, AmxStringFormatter(format, GetAMX(), GetParams(), 5));
 }
 
-SCRIPT_API(Logger_Debug, bool(IOmpLog& logger, cell const* format))
+SCRIPT_API(_Logger_Debug, bool(std::string const& file, int line, IOmpLogger& logger, cell const* format))
 {
-    AMX* amx = GetAMX();
-    return logger.log(amx, OmpLogger::ELogLevel::Debug, AmxStringFormatter(format, amx, GetParams(), 2));
+    return logger.log(file.c_str(), line, OmpLogger::LogLevel::Debug, AmxStringFormatter(format, GetAMX(), GetParams(), 4));
 }
 
-SCRIPT_API(Logger_Info, bool(IOmpLog& logger, cell const* format))
+SCRIPT_API(_Logger_Info, bool(std::string const& file, int line, IOmpLogger& logger, cell const* format))
 {
-    AMX* amx = GetAMX();
-    return logger.log(amx, OmpLogger::ELogLevel::Info, AmxStringFormatter(format, amx, GetParams(), 2));
+    return logger.log(file.c_str(), line, OmpLogger::LogLevel::Info, AmxStringFormatter(format, GetAMX(), GetParams(), 4));
 }
 
-SCRIPT_API(Logger_Warning, bool(IOmpLog& logger, cell const* format))
+SCRIPT_API(_Logger_Warning, bool(std::string const& file, int line, IOmpLogger& logger, cell const* format))
 {
-    AMX* amx = GetAMX();
-    return logger.log(amx, OmpLogger::ELogLevel::Warning, AmxStringFormatter(format, amx, GetParams(), 2));
+    return logger.log(file.c_str(), line, OmpLogger::LogLevel::Warning, AmxStringFormatter(format, GetAMX(), GetParams(), 4));
 }
 
-SCRIPT_API(Logger_Error, bool(IOmpLog& logger, cell const* format))
+SCRIPT_API(_Logger_Error, bool(std::string const& file, int line, IOmpLogger& logger, cell const* format))
 {
-    AMX* amx = GetAMX();
-    return logger.log(amx, OmpLogger::ELogLevel::Error, AmxStringFormatter(format, amx, GetParams(), 2));
+    return logger.log(file.c_str(), line, OmpLogger::LogLevel::Error, AmxStringFormatter(format, GetAMX(), GetParams(), 4));
 }
 
-SCRIPT_API(Logger_Fatal, bool(IOmpLog& logger, cell const* format))
+SCRIPT_API(_Logger_Fatal, bool(std::string const& file, int line, IOmpLogger& logger, cell const* format))
 {
-    AMX* amx = GetAMX();
-    return logger.log(amx, OmpLogger::ELogLevel::Fatal, AmxStringFormatter(format, amx, GetParams(), 2));
+    return logger.log(file.c_str(), line, OmpLogger::LogLevel::Fatal, AmxStringFormatter(format, GetAMX(), GetParams(), 4));
 }
 
-SCRIPT_API(Logger_FetchLogs, bool(IPlayer& player, IOmpLog& logger, int linesPerPage, int pageStart, std::string const& callback, std::string const& searchTerm, bool caseSensitive))
+SCRIPT_API(Logger_FetchLogs, bool(IPlayer& player, IOmpLogger& logger, int linesPerPage, int pageStart, std::string const& callback, std::string const& searchTerm, bool caseSensitive))
 {
     AMX* amx = GetAMX();
 
-    auto func = [&player, &logger, amx, callback, searchTerm, linesPerPage, pageStart, caseSensitive]() {
-
+    auto func = [&player, &logger, amx, callback, searchTerm, linesPerPage, pageStart, caseSensitive]()
+    {
         int funcIDX = 0;
         if (!amx_FindPublic(amx, callback.c_str(), &funcIDX))
         {
@@ -82,7 +77,7 @@ SCRIPT_API(Logger_FetchLogs, bool(IPlayer& player, IOmpLog& logger, int linesPer
         }
     };
     ThreadedQueue::Get()->Dispatch(func);
-    return 1;
+    return true;
 }
 
 SCRIPT_API(Logger_GetResult, int(ILogsResult& result, int row, OutputOnlyString& logs))

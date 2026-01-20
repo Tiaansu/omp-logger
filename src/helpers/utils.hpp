@@ -12,7 +12,7 @@ namespace fs = std::filesystem;
 
 namespace helpers
 {
-    const char* GetLogLevelName(OmpLogger::ELogLevel level);
+    const char* GetLogLevelName(OmpLogger::LogLevel level);
 
     bool CreatePathRecursively(const fs::path& path);
 
