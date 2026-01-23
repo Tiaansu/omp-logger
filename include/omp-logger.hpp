@@ -58,6 +58,8 @@ struct IOmpLogger
     virtual PaginatedResult fetchLogs(int linesPerPage, int pageStart, const std::string& searchTerm, bool caseSensitive) const = 0;
     
     virtual bool log(const char* file, int line, OmpLogger::LogLevel level, StringView message) const = 0;
+
+    virtual bool log(OmpLogger::LogLevel level, StringView message) const = 0;
 };
 
 class OmpLoggerManager

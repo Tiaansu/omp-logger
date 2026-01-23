@@ -32,6 +32,7 @@ public:
     std::FILE* getFile() const;
     
     bool log(const char* file, int line, OmpLogger::LogLevel level, StringView message) const;
+    bool log(OmpLogger::LogLevel level, StringView message) const;
 
     PaginatedResult fetchLogs(int linesPerPage, int pageStart, const std::string& searchTerm, bool caseSensitive) const override;
     

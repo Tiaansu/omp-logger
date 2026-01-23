@@ -34,6 +34,11 @@ std::FILE* Logger::getFile() const
     return file_;
 }
 
+bool Logger::log(OmpLogger::LogLevel level, StringView message) const
+{
+    return log__INTERNAL(nullptr, 0, level, message);
+}
+
 bool Logger::log(const char* file, int line, OmpLogger::LogLevel level, StringView message) const
 {
     return log__INTERNAL(file, line, level, message);
@@ -111,12 +116,15 @@ bool Logger::logToFile__INTERNAL(const char* file, int line, OmpLogger::LogLevel
 
         fmt::print(file_, "[{}] {}", logLevelName, message.data());
 
-        if (component->isLoggingWithSource())
+        if (file != nullptr)
         {
-            bool shouldDisplayToAll = component->isEnableSourceForAll() ? true : (level == OmpLogger::LogLevel::Warning || level == OmpLogger::LogLevel::Error || level == OmpLogger::LogLevel::Fatal);
-            if (shouldDisplayToAll)
+            if (component->isLoggingWithSource())
             {
-                fmt::print(file_, " ({}:{})", file, line);
+                bool shouldDisplayToAll = component->isEnableSourceForAll() ? true : (level == OmpLogger::LogLevel::Warning || level == OmpLogger::LogLevel::Error || level == OmpLogger::LogLevel::Fatal);
+                if (shouldDisplayToAll)
+                {
+                    fmt::print(file_, " ({}:{})", file, line);
+                }
             }
         }
 
